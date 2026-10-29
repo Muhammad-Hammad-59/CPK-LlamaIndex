@@ -206,6 +206,17 @@ All three interactive routes below need the runtime in **Intelligence mode** —
 *Pass:* two rows, each with a generated name. Clicking a row replays that conversation into the chat; New Conversation clears to the welcome screen.
 *Fail:* the drawer shows a locked view instead of a list — that is the no-key state, not a bug.
 
+The demo has three tabs at the top, one per sample on the doc page. The above is tab 1.
+
+- **Tab 2 · Drawer + CopilotSidebar.** The same drawer, but the chat is hosted in `<CopilotSidebar defaultOpen>`. The layout is the doc's as written. The doc never defines `<YourMainContent />`, so a labelled placeholder stands in for it.
+  *Try:* say `Hello`, then select the new row and press New Conversation. *Pass:* the sidebar is open on load, selecting a row replays it inside the sidebar, and New Conversation resets it. *Fail:* selecting a row leaves the sidebar unchanged.
+- **Tab 3 · Your own "New conversation" button.** This tab has a second row of controls:
+  - **`startNewThread()`** — the doc's header button, using `useCopilotChatConfiguration()`.
+  - **Controlled threadId** — the doc's `ControlledChat`, with the thread id held in app state and passed to the drawer through `onThreadSelect` and `onNewThread`.
+  - **A CSS checkbox** — injects the doc's `::part(new-thread-button)` / `::part(launcher-new-thread)` rule.
+
+  *Try:* say `Hello`, press the header button, say `Hi`. Repeat in controlled mode, then tick the box. *Pass:* each press shows the welcome screen with no row selected, and a second row appears after the next reply. Ticking the box hides the drawer's own New Conversation row. *Fail:* the button does nothing, or controlled mode logs a "threadId is controlled" warning when you click a drawer row.
+
 **`/headless-threads` → demo — Headless Threads.** The same data through `useThreads`, drawn by hand, with the `threadId` passed to the chat as ordinary React state.
 *Try:* send a message, then press **Rename** on its row.
 *Pass:* the row relabels to "Renamed" with no refresh, and selecting rows swaps the chat's history.
@@ -411,6 +422,23 @@ The docs consistently say threads "require CopilotKit Intelligence" and point at
 `<CopilotThreadsDrawer>` computes `licensed = licensePresent && checkFeature("threads")`, where `licensePresent` is `status === "valid" || status === "expiring"` — reading the **second** row. So with only the project key set, the drawer renders "Threads are a CopilotKit Intelligence feature / Upgrade" while `useThreads` on `/headless-threads` lists the same threads without complaint. While unlicensed the drawer also skips its thread fetch entirely, so it issues no network requests to debug from.
 
 The connection panel now reports both axes on separate rows for exactly this reason.
+
+### The Threads Drawer page now names a different credential and env var
+
+As of the 2026-10-29 sync, the [Threads Drawer page](https://docs.copilotkit.ai/llamaindex/prebuilt-components/copilot-threads-drawer#intelligence-access) says three things that conflict with this repo:
+
+- For cloud-hosted projects the credential is `CPK_INTELLIGENCE_API_KEY`. This repo, and `.env.example`, use `INTELLIGENCE_API_KEY`.
+- With that key alone, the runtime grants the drawer's entitlement from the organization's subscription.
+- `COPILOTKIT_LICENSE_TOKEN` is "only for offline or self-hosted licensing".
+
+That contradicts the two-credential behaviour recorded above, which was observed on 1.75.1. With `@copilotkit/runtime` 1.83.0, `/info` no longer returns a `licenseStatus` field at all, so the old way of checking (`grep licenseStatus`) no longer works. Neither claim has been re-verified against a live Intelligence project on 1.83.0. Until it is, treat both the doc's version and the repo's version as unconfirmed.
+
+### Threads Drawer samples that need filling in or adapting
+
+- The sidebar sample renders `<YourMainContent />` without defining it. The demo uses a labelled placeholder.
+- No sample sets an `agentId`. Under this repo's root `<CopilotKitProvider>`, which names no agent, the drawer and chat would resolve to `"default"`, and the runtime does not register that id. Every tab therefore sets `agentId="my_agent"` on the configuration provider.
+- The controlled `ControlledChat` sample has no layout wrapper, so the drawer, button and chat stack in normal document flow. It is rendered that way, unchanged.
+- `useState(() => crypto.randomUUID())` also runs during the server render, so the server and client start with different thread ids. That is harmless unless the id ends up in the markup. Watch the console for a hydration warning on the controlled tab.
 
 ### Two `startNewThread` functions, and only one moves the chat
 

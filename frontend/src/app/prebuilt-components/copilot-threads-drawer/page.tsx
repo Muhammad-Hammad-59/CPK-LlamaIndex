@@ -1,5 +1,5 @@
 import { RouteHeader } from "@/components/route-header";
-import { SourceCode } from "@/components/source-code";
+import { SourceCode, SourceCodeGroup } from "@/components/source-code";
 import { Callout, CodeBlock, Panel, TryIt } from "@/components/ui";
 
 const SLOT_SNIPPET = `<CopilotThreadsDrawer>
@@ -98,6 +98,91 @@ export default function Page() {
           the drawer is locked.
         </p>
       </Callout>
+
+      <Panel
+        title="Tab 2 · A sidebar as the chat host"
+        description="The drawer stays a sibling of the page content; the chat moves into a CopilotSidebar."
+      >
+        <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+          <code>CopilotSidebar</code> wraps a <code>CopilotChat</code>, so it
+          reads the same chat configuration and the drawer drives it with no
+          extra wiring. The layout is left as the doc writes it. The sample
+          renders <code>&lt;YourMainContent /&gt;</code> without defining it, so
+          a labelled placeholder stands in for it.
+        </p>
+        <div className="mt-4">
+          <TryIt
+            prompts={["Say hello", "then pick the new row in the drawer, and New Conversation"]}
+            expect="The sidebar opens on load. A row appears in the drawer after the first reply; selecting it replays the conversation inside the sidebar, and New Conversation returns the sidebar to its welcome screen."
+            fail="Selecting a row changes nothing in the sidebar — the sidebar's inner chat is not reading the shared configuration. The drawer showing Upgrade is the licensing state described below, not this failure."
+          />
+        </div>
+        <div className="mt-4">
+          <SourceCode
+            file="frontend/src/app/prebuilt-components/copilot-threads-drawer/demo-chat/page.tsx"
+            region="drawer-with-sidebar"
+          />
+        </div>
+      </Panel>
+
+      <Panel
+        title={'Tab 3 · Your own "New conversation" button'}
+        description="An app-owned button calling the same startNewThread() the drawer's row calls — plus the controlled-threadId variant and the CSS that hides the drawer's own controls."
+      >
+        <ul className="space-y-1.5 text-sm text-slate-700 dark:text-slate-300">
+          <li>
+            · <strong>startNewThread()</strong>: the button reads{" "}
+            <code>useCopilotChatConfiguration()</code> inside the same provider
+            as the drawer and chat. It gets a fresh thread id, and the drawer
+            deselects because it reads the same active thread. The new row only
+            appears once that thread has had a run.
+          </li>
+          <li>
+            · <strong>Controlled threadId</strong>: the app holds the id in
+            state and passes it to the provider. The drawer reports through{" "}
+            <code>onThreadSelect</code> / <code>onNewThread</code>, and the
+            button runs the same code as <code>onNewThread</code>. In this mode
+            the doc says the built-in paths do nothing and log a warning
+            instead. Rendered exactly as published, with no layout wrapper.
+          </li>
+          <li>
+            · <strong>CSS parts</strong>: the checkbox injects the doc&apos;s rule
+            hiding <code>::part(new-thread-button)</code> and{" "}
+            <code>::part(launcher-new-thread)</code>, leaving only the app&apos;s
+            button.
+          </li>
+        </ul>
+        <div className="mt-4">
+          <TryIt
+            prompts={[
+              "Say hello",
+              "click the header's New conversation button, then say hi",
+              "switch to Controlled threadId and repeat",
+              "tick the CSS checkbox",
+            ]}
+            expect="Each button press clears the chat to its welcome screen and leaves no drawer row selected; after the next reply a second row appears. Controlled mode behaves the same, driven by app state. With the box ticked, the drawer's New Conversation row (and the launcher's + on narrow viewports) disappears."
+            fail="The button does nothing — it is outside the provider, so the hook returned null. In controlled mode, a console warning on clicking a drawer row means onThreadSelect is not updating the threadId passed to the provider."
+          />
+        </div>
+        <div className="mt-4">
+          <SourceCodeGroup
+            files={[
+              {
+                file: "frontend/src/app/prebuilt-components/copilot-threads-drawer/demo-chat/page.tsx",
+                region: "new-conversation-button",
+              },
+              {
+                file: "frontend/src/app/prebuilt-components/copilot-threads-drawer/demo-chat/page.tsx",
+                region: "controlled-chat",
+              },
+              {
+                file: "frontend/src/app/prebuilt-components/copilot-threads-drawer/demo-chat/page.tsx",
+                region: "hide-drawer-new-thread",
+              },
+            ]}
+          />
+        </div>
+      </Panel>
 
       <Panel title="Source">
         <SourceCode file="frontend/src/app/prebuilt-components/copilot-threads-drawer/demo-chat/page.tsx" />

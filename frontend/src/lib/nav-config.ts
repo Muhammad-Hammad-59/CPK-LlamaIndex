@@ -110,7 +110,7 @@ export const NAV: NavGroup[] = [
           "The drop-in conversation sidebar, wired with no active-thread state of its own.",
         status: "working",
         statusNote:
-          "Needs the runtime in Intelligence mode. Without a key the drawer renders a locked view instead of the list.",
+          "Needs the runtime in Intelligence mode. Without a key the drawer renders a locked view instead of the list. Tabs 2 (sidebar host) and 3 (own New-conversation button) are new and not yet run against an Intelligence runtime.",
       },
       {
         path: "/headless-threads",
